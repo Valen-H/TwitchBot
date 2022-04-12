@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>TwitchBot Panel</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="author" content="V.H." />
+		<meta name="description" content="A Bot for Twitch" />
+		<meta name="keywords" content="Twitch, Bot, Chat" />
+		<meta property="og:image" content="https://static.twitchcdn.net/assets/favicon-32-e29e246c157142c94346.png" />
+		<link href="https://static.twitchcdn.net/assets/favicon-32-e29e246c157142c94346.png" rel="icon" />
+		<link href="manifest.json" rel="manifest" />
+		<style>
+			* {
+				user-select: contain;
+				background-blend-mode: color;
+			}
+			*:disabled, *[disabled] {
+				cursor: not-allowed !important;
+				transition: none !important;
+			}
+			*:invalid {
+				outline: 1px dotted red;
+			}
+			*:focus {
+				outline: 3px solid rgb(110, 60, 160);
+			}
+			::selection {
+				color: rgb(100, 70, 180);
+			}
+			::-webkit-scrollbar {
+				width: 10px;
+				border-radius: 5px;
+			}
+			::-webkit-scrollbar-thumb {
+				background-color: gray;
+				border-radius: 5px;
+			}
+			::-webkit-scrollbar-track {
+				background-color: lightgray;
+				box-shadow: inset 0 0 5px lightgray;
+				border-radius: 5px;
+			}
+			::-webkit-resizer, ::-webkit-scrollbar-corner {
+				border-radius: 5px;
+			}
+			body, #body {
+				top: 0;
+				left: 0;
+				bottom: 0;
+				right: 0;
+				margin: 0;
+				position: absolute;
+				display: block;
+				
+				background: radial-gradient(circle farthest-side at center, white 5%, lightgray 40%, gray 90%);
+				background-position: center;
+				background-repeat: no-repeat;
+				background-attachment: fixed;
+				scrollbar-gutter: stable both-edges;
+				overflow-y: auto;
+				overflow-x: hidden;
+			}
+			
+			label {
+				display: table-cell;
+				text-align: left;
+				vertical-align: middle;
+				user-select: none;
+				padding: auto;
+				cursor: help;
+			}
+			input, textarea, select, button, fieldset {
+				border-radius: 5px;
+				transition: all 200ms;
+				padding: 5px;
+				vertical-align: middle;
+				line-height: 100%;
+			}
+			input:hover:not([disabled]), button:hover:not([disabled]) {
+				background-color: lightgray;
+				filter: brightness(70%);
+				box-shadow: 1px 1px 1px 1px lightgray;
+			}
+			input:focus, button:focus {
+				filter: brightness(55%);
+			}
+			input[type="submit"]:focus, button:focus {
+				text-decoration: underline;
+			}
+			input[type="submit"]:active, button:active {
+				filter: brightness(35%) !important;
+			}
+			input[type="checkbox"] {
+				transform: scaleX(300%) scaleY(200%);
+			}
+			label::after {
+				content: ": ";
+			}
+			input[type="submit"], input[type="checkbox"], button {
+				cursor: pointer;
+			}
+			legend, input[type="submit"], button {
+				text-align: center;
+				user-select: none;
+			}
+			form {
+				margin: auto;
+				padding: 5px;
+				overflow-y: auto;
+				overflow-x: hidden;
+			}
+			
+			.header {
+				text-align: center;
+				vertical-align: middle;
+				width: 100%;
+				height: auto;
+				top: 0;
+				left: 0;
+				right: 0;
+				margin: auto;
+				padding: auto;
+				position: sticky;
+				
+				background: linear-gradient(90deg, black 0%, rgb(110, 60, 160) 70%);
+				-webkit-background-clip: text;
+				background-clip: text;
+				-webkit-text-fill-color: transparent;
+				user-select: none;
+			}
+			.header, .header * {
+				margin: 5px;
+			}
+			.flexrn {
+				display: flex;
+				flex-flow: row nowrap;
+				justify-content: center;
+				align-content: flex-start;
+				place-items: center;
+				gap: 10px;
+			}
+			.flexcn {
+				display: flex;
+				flex-flow: column nowrap;
+				place-content: flex-start;
+				place-items: stretch;
+				gap: 10px;
+			}
+			.flexrna {
+				display: flex;
+				flex-flow: row nowrap;
+				justify-content: space-evenly;
+				align-content: stretch;
+				place-items: center;
+				gap: 10px;
+			}
+			.gridr2 {
+				display: grid;
+				grid-auto-flow: row;
+				grid-template: auto / minmax(100px, 1fr) minmax(200px, 5fr);
+				gap: 10px;
+				margin: auto;
+				padding: auto;
+			}
+			.rule {
+				display: flex;
+				flex-flow: row nowrap;
+				justify-content: flex-start;
+				align-content: stretch;
+				place-items: center;
+				gap: 15px;
+				border: 1px ridge darkgray;
+				border-radius: 5px;
+				padding: 1px 10px 1px 10px;
+				transition: all 200ms ease-in-out;
+			}
+			.rule:hover {
+				filter: brightness(60%);
+			}
+			.thinking {
+				cursor: progress !important;
+			}
+			
+			#handles {
+				overflow-y: auto;
+				overflow-x: hidden;
+			}
+			#handles > aside {
+				min-height: 5vh;
+				max-height: 20vh;
+				width: auto;
+				height: auto;
+				border: 1px ridge darkgray;
+				padding: 5px;
+				margin: auto;
+				overflow-y: auto;
+			}
+			#users {
+				max-height: 10vh !important;
+			}
+			#logs {
+				width: 100%;
+			}
+		</style>
+		<!-- https://twitch-js.netlify.app/ -->
+		<script src="https://unpkg.com/twitch-js/dist/twitch.js"></script>
+		<script defer>
+			class User {
+				
+				constructor(name, token, client, channels = "", inh = { }) {
+					if (!(name && token)) throw `Bad User ${name}`;
+					
+					this.name		= name.replace(/^#/is, "");
+					this.token		= token.replace(/^oauth:/is, "");
+					this.client		= client;
+					this.channels	= typeof channels == "string" ? channels.split(',').map(a => a.trim()).filter(a => a) : Array.from(channels).map(a => a.trim()).filter(a => a);
+					this.enabled	= false;
+					
+					Object.assign(this, inh);
+				} //ctor
+				
+				err(a = this.name) {
+					//this.enable(false);
+					this["#_failed"]	= true;
+					throw `Could not connect ${a}`;
+				} //err
+				async connect() {
+					this["#_client"]	= new TwitchJs({
+						token:						this.token,
+						username:					this.name,
+						client:						this.client,
+						onAuthenticationFailure:	a => this.err(a),
+					});
+					
+					return await this["#_client"].chat.connect();
+				} //connect
+				async reconnect() {
+					if (!this["#_client"]) return;
+					
+					this["#_failed"]	= false;
+					
+					return await this["#_client"].chat.reconnect();
+				} //reconnect
+				async join() {
+					if (!this["#_client"]) return;
+					
+					return await Promise.all(this.channels.map(c => this["#_client"].chat.join(c)));
+				} //join
+				async leave() {
+					if (!this["#_client"]) return;
+					
+					return await Promise.all(this.channels.map(c => this["#_client"].chat.part(c)));
+				} //leave
+				async disconnect() {
+					if (!this["#_client"]) return;
+					
+					return await this["#_client"].disconnect();
+				} //disconnect
+				
+				enable(ise = true) {
+					if (!this["#_failed"]) return this.enabled	= !!ise;
+				} //enable
+				
+				get str() {
+					return {
+						name:		this.name,
+						token:		this.token,
+						client:		this.client,
+						channels:	this.channels,
+						enabled:	this.enabled,
+					};
+				} //g-str
+				
+			} //User
+			
+			const	elms	= new Map,
+					nullish	= () => {};
+			let		data	= {
+				users:	{ },
+				rules:	[ ],
+			};
+			
+			function err(...data) {
+				console.error("ERROR:\t", ...data);
+				
+				if (err.reloads) location.reload();
+				
+				alert(data	= data.join(' '));
+				
+				return data;
+			} //err
+			err.reloads	= true;
+			function log(...data) {
+				console.log("LOG:\t", ...data);
+				
+				return data.join(' ');
+			} //log
+			
+			function save(k, w = "tT_data") {
+				const	o	= encrypt(k);
+				
+				localStorage.setItem(w, o[0]);
+				localStorage.setItem("Tt_enckey", o[2])
+				
+				return o;
+			} //save
+			function restore() {
+				const	odt		= decrypt()[0],
+						odts	= [ ];
+				
+				if (odt) {
+					if (odt.users)
+						for (const e in odt.users) odts.push(register(odt.users[e].name, odt.users[e].token, odt.users[e].client, odt.users[e].channels, { enabled: odt.users[e].enabled }));
+				}
+				
+				return odts;
+			} //restore
+			
+			function refer() {
+				return [ "upd",
+						 "account", "account_username", "account_client", "account_token", "account_register",// "account_enable",
+						 "users", "users_user", "users_enabled", "users_channels", "users_reconnect", "users_remove",
+						 "rules", "rules_temp" ].map(e => {
+					const	elm	= document.getElementById(e);
+					
+					if (elm) elms.set(e, elm);
+					else err(`'${e}' not found in DOM - Please refresh.`);
+					
+					return elm;
+				});
+			} //refer
+			function get(elm, fn = nullish) {
+				const	el	= elms.get(elm);
+				
+				if (!el) err(`'${elm}' not found in Map - Please refresh.`);
+				
+				return fn(el) || el;
+			} //get
+			
+			function encrypt(key = JSON.stringify(data, (k, v) => {
+				if (v instanceof User) return v.str;
+				else return v;
+			}), by = localStorage.getItem("Tt_enckey") || Math.round(Math.random() * 0xFFFF)) {
+				const	k1 = Math.round(Math.random() * 0xFFFF),
+						k2 = Number(by) || Math.round(Math.random() * 0xFFFF);
+				
+				let		stp = btoa(unescape(encodeURIComponent(key))).split('');
+				
+				stp = stp.map(s => {
+					let	val = (s.charCodeAt(0) + k1 * 2 - k2) % 0xFFFF;
+					
+					while (val < 0) val += 0xFFFF;
+					
+					return String.fromCharCode(val);
+				});
+				stp.unshift(String.fromCharCode(k1));
+				
+				return [ stp.join(''), k1, k2 ];
+			} //encrypt
+			function decrypt(key = localStorage.getItem("tT_data"), by = localStorage.getItem("Tt_enckey")) {
+				if (!key) return [ key, -1, by ];
+				if (!by) throw "Bad Decryption";
+				
+				const	k1 = key.charCodeAt(0),
+						k2 = Number(by);
+				
+				let		str = key.slice(1).split('');
+				
+				str = JSON.parse(decodeURIComponent(escape(atob(str.map(s => {
+					let val = (s.charCodeAt(0) - k1 * 2 + k2) % 0xFFFF;
+					
+					while (val < 0) val += 0xFFFF;
+					
+					return String.fromCharCode(val);
+				}).join('')))));
+				
+				return [ str, k1, k2 ];
+			} //decrypt
+			
+			async function register(user, token, client, ...rest) {
+				if (!(user && token)) return alert(`Please complete the form.`);
+				
+				console.info(`Register:\t${user}, ${client}`);
+				
+				try {
+					const	usr	= new User(user, token, client, ...rest);
+					
+					get("account", a => a.classList.add("thinking"));
+					get("account_register", a => a.classList.add("thinking"));
+					await usr.connect();
+					await usr.join();
+					
+					if (!usr["#_failed"]) {
+						data.users[user]	= usr;
+						save();
+						
+						get("account_username", e => e.value = "");
+						get("account_client", e => e.value = "");
+						get("account_token", e => e.value = "");
+						get("users_user", u => {
+							if (!u.querySelector(`option[value="${usr.name}"]`)) {
+								const	opt	= document.createElement("option");
+								
+								opt.value	= opt.innerText	= usr.name;
+								u.appendChild(opt);
+							}
+							
+							u.value	= usr.name;
+						});
+						pickUser(usr.name);
+					}
+					
+					get("account_register", a => a.setCustomValidity(""));
+				} catch(e) {
+					get("account_register", a => {
+						a.setCustomValidity("Cannot Connect");
+						a.reportValidity();
+					});
+					alert(e);
+				}
+				
+				get("account", a => a.classList.remove("thinking"));
+				get("account_register", a => a.classList.remove("thinking"));
+				
+				return data.users[user];
+			} //register
+			function pickUser(name = get("users_user").value) {
+				const	usr	= data.users[name];
+				
+				if (usr) {
+					get("users_channels", c => {
+						c.removeAttribute("disabled");
+						c.value	= usr.channels.join(',');
+					});
+					get("users_enabled", e => {
+						e.removeAttribute("disabled");
+						e.checked	= usr.enabled;
+					});
+					
+					return usr.name;
+				} else {
+					get("users_channels", c => {
+						c.disabled	= true;
+						c.value		= "";
+					});
+					get("users_enabled", e => {
+						c.disabled	= true;
+						c.checked	= false;
+					});
+					
+					return "";
+				}
+			} //pickUser
+			function addRule() {
+				get("rules_temp", r => {
+					const	n	= r.content.cloneNode(true);
+					
+					get("rules", l => {
+						l.appendChild(n);
+					});
+				});
+			} //addRule
+			
+			window.addEventListener("DOMContentLoaded", function _load() {
+				console.info("Loaded.");
+				
+				document.cookie	= `last_access=${Date.now()};`;
+				
+				refer();
+				
+				document.body.style.cursor	= "wait";
+				Promise.all(restore()).then(() => document.body.style.cursor	= "auto");
+				
+				/*Array.from(document.querySelectorAll("button")).forEach(b => b.onkeydown	= k => {
+					if (k.key == "Enter") b.click();
+				});*/
+				
+				get("account", e => {
+					function _submit(s) {
+						if (s) {
+							s.preventDefault();
+							s.stopImmediatePropagation();
+							s.stopPropagation();
+						}
+						
+						const	[user, client, token]	= [ "account_username", "account_client", "account_token" ].map(e => (get(e) || { value: null }).value);
+						
+						register(user, token, client, "", data.users[user] || { }).catch(err);
+						
+						return false;
+					};; //_submit
+					
+					e.onsubmit	= _submit;
+					e.onkeydown	= k => {
+						if (k.key == "Enter") _submit();
+					};
+				});
+				get("users_user", u => {
+					u.onchange	= e => pickUser(u.value);
+				});
+				get("users_reconnect", r => {
+					r.onclick	= async e => {
+						const	usr	= data.users[get("users_user").value];
+						
+						if (usr) {
+							r.classList.add("thinking");
+							
+							try {
+								await usr.reconnect();
+							} catch(e) {
+								usr["#_failed"]	= true;
+							}
+							
+							if (usr["#_failed"])
+								alert(`Reconnect Failed ${usr.name}`);
+							
+							r.classList.remove("thinking");
+						}
+					};
+				});
+				get("users_remove", r => {
+					r.onclick	= async e => {
+						if (data.users[get("users_user").value]) {
+							await data.users[get("users_user").value].disconnect();
+							delete data.users[get("users_user").value];
+							
+							save();
+							
+							get("users_user", u => {
+								const	w				= u.querySelector(`option[value="${get("users_user").value}"]`);
+								
+								if (w) w.remove();
+								
+								get("users_user").value	= pickUser();
+							});
+						}
+					};
+				});
+				get("users_enabled", e => {
+					e.onchange	= e => {
+						const	usr	= data.users[get("users_user").value];
+						
+						if (usr) {
+							usr.enable(e.target.checked);
+							save();
+						} else err(`Wrong User ${usr}`);
+					};
+				});
+				get("users_channels", c => {
+					c.onchange	= async e => {
+						const	usr	= data.users[get("users_user").value];
+						
+						if (usr) {
+							try {
+								await usr.leave();
+								
+								usr.channels	= e.target.value.split(',').map(a => a.trim()).filter(a => a);
+								save();
+								get("users_channels", a => a.classList.add("thinking"));
+								
+								await usr.join();
+							} catch(e) {
+								alert(e);
+							}
+							
+							get("users_channels", a => a.classList.remove("thinking"));
+						} else err(`Wrong User ${usr}`);
+					};
+				});
+				
+				get("upd", u => {
+					u.innerText	= new Date(Number(u.getAttribute("data-last")));
+				});
+			});
+		</script>
+	</head>
+	<body>
+		<main id="body">
+			<header class="header">
+				<small class="flexrn"><h1>TwitchBot</h1><span>&emsp;~ By V.H.&emsp;(Last Update:&ensp;<span id="upd" data-last="1649796419153" style="font-size: smaller;"></span>)</span></small>
+				<hr />
+			</header>
+			<section id="forms">
+				<form id="account">
+					<fieldset class="gridr2">
+						<legend>Register an Account</legend>
+						<label for="account_username" title="Provide as it appears on your personal Twitch channel">Username*</label>
+						<input type="text" id="account_username" placeholder="Username" minlength="3" maxlength="25" size="30" pattern="#?[a-zA-Z0-9]\w{2,24}" title="Provide as it appears on your personal Twitch channel" autocomplete="name" tabindex="1" autofocus required />
+						<label for="account_client" title="Client ID - Optional">Client</label>
+						<input type="text" id="account_client" placeholder="Client" minlength="10" size="100" pattern="\w" title="Client ID - Optional" autocomplete="additional-name" tabindex="3" />
+						<label for="account_token" title="https://twitchapps.com/tmi/"><a href="https://twitchapps.com/tmi/" target="_blank" tabindex="-1">Token</a>*</label>
+						<input type="password" id="account_token" placeholder="Token" minlength="10" size="100" title="https://twitchapps.com/tmi/" autocomplete="current-password" tabindex="2" required />
+						<!-- <button id="account_enable" tabindex="5" onclick="enable_all(event)" title="Not Implemented" disabled>Enable all Users</button> -->
+						<input type="submit" id="account_register" style="grid-column: 2;" title="Submit" tabindex="4" />
+					</fieldset>
+				</form>
+			</section>
+			<br />
+			<section id="handles">
+				<aside id="users" class="flexrna">
+					<label for="users_user" title="Pick User to edit">User</label>
+					<select id="users_user" title="Pick User to edit" tabindex="5"></select>
+					<label for="users_enabled" title="Allow User to participate in rules">Enabled</label>
+					<input type="checkbox" id="users_enabled" title="Allow User to participate in Rules" tabindex="6" disabled />
+					<label for="users_channels" title="Channels where User is allowed to be active in - Separate with comma">Channels</label>
+					<input type="text" id="users_channels" placeholder="Channels" title="Channels where User is allowed to be active in - Separate with comma" autocomplete="address-line1" tabindex="7" disabled />
+					<button id="users_reconnect" style="background-color: rgba(50, 250, 50, .5);" title="Reconnect Client" tabindex="8">Reconnect</button>
+					<button id="users_remove" style="background-color: rgba(250, 50, 50, .5);" title="Remove User from automation" tabindex="9">Remove</button>
+				</aside>
+				<br />
+				<aside id="rules" class="flexcn">
+					<!--
+						Users
+						Channels
+						Enabled
+						
+						Reply After (and/or)
+							- Text (regexp)
+							- Delay (min-max)
+						
+						Reply (pattern)
+					-->
+					<template id="rules_temp">
+						<div class="rule flexrna">
+							<label title="Users that participate in rule - Separate with comma">Users</label>
+							<input type="text" placeholder="Users" title="Users that participate in rule - Separate with comma" autocomplete="name" />
+							<label title="Channels that participate in rule - Separate with comma">Channels</label>
+							<input type="text" placeholder="Channels" title="Channels that participate in rule - Separate with comma" autocomplete="address-line1" />
+							<label title="What this Rule reacts to">Trigger</label>
+							<input type="text" placeholder="Rule..." title="What this Rule reacts to" autocomplete />
+							<label title="How it reacts when Rule is triggered">Response</label>
+							<input type="text" placeholder="Reply" title="How it reacts when Rule is triggered" autocomplete />
+							<label title="Allow Rule to participate in automation">Enabled</label>
+							<input type="checkbox" title="Allow Rule to participate in automation" />
+							<button style="background-color: rgba(250, 50, 50, .5); aspect-ratio: 1;" title="Remove Rule from automation">X</button>
+						</div>
+					</template>
+					<button style="background-color: rgba(50, 250, 50, .5); position: sticky; top: 0;" onclick="addRule()" title="Add new Rule" tabindex="10">Add New Rule +</button>
+				</aside>
+				<br />
+				<aside id="logs" class="flexcn">
+					<template id="logs_temp">
+						<div class="log flexrna">
+							
+						</div>
+					</template>
+				</aside>
+			</section>
+		</main>
+	</body>
+</html>
