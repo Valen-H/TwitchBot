@@ -1,4 +1,4 @@
-# TwitchBot
+# TwitchBot ~ PreRelease
 
 > Twitch account chatting (and more?) automation.
 
