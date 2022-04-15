@@ -14,6 +14,7 @@
 			* {
 				user-select: contain;
 				background-blend-mode: color;
+				box-sizing: border-box;
 			}
 			*:disabled, *[disabled] {
 				cursor: not-allowed !important;
@@ -26,7 +27,7 @@
 				outline: 3px solid rgb(110, 60, 160);
 			}
 			::selection {
-				color: rgb(100, 70, 180);
+				color: rgb(130, 10, 255);
 			}
 			::-webkit-scrollbar {
 				width: 10px;
@@ -81,18 +82,19 @@
 				line-height: 100%;
 			}
 			input:hover:not([disabled]), button:hover:not([disabled]) {
-				background-color: lightgray;
-				filter: brightness(70%);
+				background-color: gray;
+				backdrop-filter: brightness(50%);
 				box-shadow: 1px 1px 1px 1px lightgray;
 			}
 			input:focus, button:focus {
-				filter: brightness(55%);
+				background-color: lightgray;
 			}
 			input[type="submit"]:focus, button:focus {
 				text-decoration: underline;
 			}
 			input[type="submit"]:active, button:active {
-				filter: brightness(35%) !important;
+				background-color: darkgray;
+				backdrop-filter: brightness(50%) !important;
 			}
 			input[type="checkbox"] {
 				transform: scaleX(300%) scaleY(200%);
@@ -179,21 +181,24 @@
 				justify-content: flex-start;
 				align-content: stretch;
 				place-items: center;
-				gap: 15px;
+				gap: 10px;
 				border: 1px ridge darkgray;
 				border-radius: 5px;
-				padding: 1px 10px 1px 10px;
+				padding: 1px 5px 1px 5px;
+				margin: auto;
 				transition: all 200ms ease-in-out;
+				min-width: 100%;
+				width: fit-content;
+			}
+			.rule:hover {
+				filter: brightness(60%);
 			}
 			.log {
 				border-bottom: 1px ridge gray;
 				max-height: 10%;
-				width: 100%;
 				margin: auto;
 				padding: auto;
-			}
-			.rule:hover {
-				filter: brightness(60%);
+				width: 100%;
 			}
 			.thinking {
 				cursor: progress !important;
@@ -218,6 +223,7 @@
 			}
 			#logs {
 				width: 100%;
+				overflow: auto;
 			}
 		</style>
 		<!-- https://twitch-js.netlify.app/ -->
@@ -244,6 +250,8 @@
 					throw `Could not connect ${a}`;
 				} //err
 				async connect() {
+					await this.disconnect();
+					
 					this["#_client"]	= new TwitchJs({
 						token:						this.token,
 						username:					this.name,
@@ -266,6 +274,8 @@
 				async join() {
 					if (!this["#_client"]) return;
 					
+					await this.leave();
+					
 					return await Promise.all(this.channels.map(c => this["#_client"].chat.join(c)));
 				} //join
 				async leave() {
@@ -276,10 +286,20 @@
 				async disconnect() {
 					if (!this["#_client"]) return;
 					
+					await this.leave();
+					
 					return await this["#_client"].disconnect();
 				} //disconnect
+				listen(on = true) {
+					if (!this["#_client"]) return;
+					
+					if (on)	return this["#_client"].chat.on("*", (...d) => execRule(this, ...d));
+					else	return this["#_client"].chat.removeAllListeners();
+				} //listen
 				
-				enable(ise = true) {
+				enable(ise = this.enabled) {
+					this.listen(this.enabled);
+					
 					if (!this["#_failed"]) return this.enabled	= !!ise;
 				} //enable
 				
@@ -315,7 +335,7 @@
 				} //ctor
 				
 				set users(users) {
-					this._users	= (typeof users == "string" ? users.split(',') : users).map(u => u.toString().trim()).filter(a => a);
+					this._users	= (typeof users == "string" ? users.split(',') : users).map(u => u.toString().toLowerCase().trim()).filter(a => a);
 				} //s-users
 				get users() {
 					return this._users;
@@ -362,6 +382,7 @@
 			let		data	= {
 				users:	{ },
 				rules:	[ ],
+				store:	{ },
 			};
 			
 			function err(...data) {
@@ -385,10 +406,13 @@
 					.replaceAll(/"{2}(.+?)"{2}/gmisd, "<q>$1</q>")
 					.replaceAll(/\[{2}(.+?)\]{2}/gmisd, "<mark>$1</mark>")
 					.replaceAll(/_(.+?)_/gmisd, "<i>$1</i>")
+					.replaceAll(/-{2}(.+?)-{2}/gmisd, "<small>$1</small>")
 				);
 				
 				get("logs_temp", l => {
 					const	e	= l.content.cloneNode(true).querySelector("div");
+					
+					e.title		= new Date;
 					
 					for (const i of parsed) {
 						const	el		= document.createElement("div");
@@ -405,6 +429,8 @@
 			} //log
 			
 			function save(merge = true, k, w = "tT_data", b) {
+				console.debug("SAVE");
+				
 				let			m	= { };
 				if (merge)	m	= decrypt(localStorage.getItem(w), b);
 				if (!k)		k	= data;
@@ -415,7 +441,7 @@
 							}), b);
 				
 				localStorage.setItem(w, o[0]);
-				localStorage.setItem("Tt_enckey", o[2])
+				localStorage.setItem("Tt_enckey", o[2]);
 				
 				return o;
 			} //save
@@ -507,6 +533,7 @@
 					get("account", a => a.classList.add("thinking"));
 					get("account_register", a => a.classList.add("thinking"));
 					await usr.connect();
+					await usr.enable();
 					await usr.join();
 					
 					if (!usr["#_failed"]) {
@@ -573,7 +600,7 @@
 					return "";
 				}
 			} //pickUser
-			function addRule(inh) {
+			function addRule(inh = { users: get("users_user").value, channels: get("users_channels").value }) {
 				get("rules_temp", r => {
 					console.debug("AddRule:\t", data.rules.length);
 					
@@ -625,7 +652,34 @@
 				
 				save();
 			} //removeRule
+			function execRule(origin, d, ...rest) {
+				//console.debug("CALL:\t", origin.name, d, ...rest);
+				
+				//'_raw', 'timestamp', 'command', 'event', 'channel', 'username', 'isSelf', 'tags', 'message']
+				
+				for (const rule of data.rules) {
+					if (rule.channels.includes(origin.name.toLowerCase().trim())) {
+						with (origin) {
+							with (d) {
+									
+							}
+						}
+					}
+				}
+			} //execRule
 			
+			window.addEventListener("keydown", k => {
+				if (k.key === '1' && k.ctrlKey) {
+					k.preventDefault();
+					k.stopImmediatePropagation();
+					k.stopPropagation();
+					
+					const	o	= eval(prompt("Input code to evaluate", `data.store`));
+					
+					console.log("EVAL:\t", o);
+					alert(o);
+				}
+			});
 			window.addEventListener("DOMContentLoaded", function _load() {
 				console.info("Loaded.");
 				
@@ -634,11 +688,10 @@
 				refer();
 				
 				document.body.style.cursor	= "wait";
-				Promise.all(restore()).then(() => document.body.style.cursor	= "auto");
-				
-				/*Array.from(document.querySelectorAll("button")).forEach(b => b.onkeydown	= k => {
-					if (k.key == "Enter") b.click();
-				});*/
+				Promise.all(restore()).then(() => {
+					document.body.style.cursor	= "auto";
+					log(`<span style="color: green;">Loaded.</span>`);
+				});
 				
 				get("account", e => {
 					function _submit(s) {
@@ -755,7 +808,6 @@
 						<input type="text" id="account_client" placeholder="Client" minlength="10" size="100" pattern="\w" title="Client ID - Optional" autocomplete="additional-name" tabindex="3" />
 						<label for="account_token" title="https://twitchapps.com/tmi/"><a href="https://twitchapps.com/tmi/" target="_blank" tabindex="-1">Token</a>*</label>
 						<input type="password" id="account_token" placeholder="Token" minlength="10" size="100" title="https://twitchapps.com/tmi/" autocomplete="current-password" tabindex="2" required />
-						<!-- <button id="account_enable" tabindex="5" onclick="enable_all(event)" title="Not Implemented" disabled>Enable all Users</button> -->
 						<input type="submit" id="account_register" style="grid-column: 2;" title="Submit" tabindex="4" />
 					</fieldset>
 				</form>
@@ -773,6 +825,22 @@
 					<button id="users_remove" style="background-color: rgba(250, 50, 50, .5);" title="Remove User from automation" tabindex="9">Remove</button>
 				</aside>
 				<br />
+				<datalist id="trigs">
+					<optgroup label="Fields">
+						<option value="timestamp">timestamp</option>
+						<option value="command">command</option>
+						<option value="event">event</option>
+						<option value="channel">channel</option>
+						<option value="username">username</option>
+						<option value="isSelf">isSelf</option>
+						<option value="tags">tags</option>
+						<option value="message">message</option>
+					</optgroup>
+					<optgroup label="Expressions">
+						<option value="/^$/.test(message)">/^$/.test(message)</option>
+						<option value="username.toLowerCase() == &quot;&quot;.toLowerCase()">username.toLowerCase() == "".toLowerCase()</option>
+					</optgroup>
+				</datalist>
 				<aside id="rules" class="flexcn">
 					<template id="rules_temp">
 						<div class="rule flexrna">
@@ -780,10 +848,10 @@
 							<input type="text" data-mid="users" placeholder="Users" onchange="updateRule(event.target.parentNode.id)" title="Users that participate in rule - Separate with comma" autocomplete="name" />
 							<label title="Channels that participate in rule - Separate with comma">Channels</label>
 							<input type="text" data-mid="channels" placeholder="Channels" onchange="updateRule(event.target.parentNode.id)" title="Channels that participate in rule - Separate with comma" autocomplete="address-line1" />
-							<label title="What this Rule reacts to">Trigger</label>
-							<input type="text" data-mid="triggers" placeholder="Rule..." onchange="updateRule(event.target.parentNode.id)" title="What this Rule reacts to" autocomplete />
-							<label title="How it reacts when Rule is triggered">Response</label>
-							<input type="text" data-mid="reacts" placeholder="Reply" onchange="updateRule(event.target.parentNode.id)" title="How it reacts when Rule is triggered" autocomplete />
+							<label title="What this Rule reacts to"><a href="https://github.com/Valen-H/TwitchBot/blob/master/README.md#triggers" target="_blank" tabindex="-1">Trigger</a></label>
+							<input type="text" data-mid="triggers" placeholder="Rule..." list="trigs" size="25" onchange="updateRule(event.target.parentNode.id)" title="What this Rule reacts to" autocomplete />
+							<label title="How it reacts when Rule is triggered"><a href="https://github.com/Valen-H/TwitchBot/blob/master/README.md#reactions" target="_blank" tabindex="-1">Response</a></label>
+							<input type="text" data-mid="reacts" placeholder="Reply" size="25" onchange="updateRule(event.target.parentNode.id)" title="How it reacts when Rule is triggered" autocomplete />
 							<label title="Allow Rule to participate in automation">Enabled</label>
 							<input type="checkbox" data-mid="enabled" onchange="updateRule(event.target.parentNode.id)" title="Allow Rule to participate in automation" />
 							<button style="background-color: rgba(250, 50, 50, .5); aspect-ratio: 1;" onclick="removeRule(event.target.parentNode.id)" title="Remove Rule from automation">X</button>
