@@ -63,4 +63,4 @@ username == "user1" && /^starts with .+? and ends with$/.test(message)
 
 ### Reactions
 
-> Same syntax as [Triggers](#triggers "Triggers") but cannot access the message/event object but the bot account instead.
+> Same syntax as [Triggers](#triggers "Triggers") but bot-oriented instead of event/message-oriented.
