@@ -58,8 +58,8 @@ Example of accessable scope values within the rule:
 
 #### Examples
 
-Activate if a message is sent by a user in the designated channel and carries a designated message:
-`username == "user1" && /^starts with .+? and ends with$/.test(message)`
+* Activate if a message is sent by a user in the designated channel and carries a designated message:  
+   `username == "user1" && /^starts with .+? and ends with$/.test(message)`
 
 ### Reactions
 
