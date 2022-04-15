@@ -2,7 +2,7 @@
 
 Twitch account chatting (and more?) automation.
 
-[Visit Hosted Site Here](https://valen-h.github.io/TwitchBot/TwitchBot.html "GitHub Pages")  
+Visit Hosted Site [Here](https://valen-h.github.io/TwitchBot/TwitchBot.html "GitHub Pages")  
 Learn RegExp [Here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp "JS RegEx MDN").
 
 ## Notes
