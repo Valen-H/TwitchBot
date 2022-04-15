@@ -62,6 +62,9 @@
 				overflow-x: hidden;
 			}
 			
+			section, aside {
+				resize: both;
+			}
 			label {
 				display: table-cell;
 				text-align: left;
@@ -155,6 +158,13 @@
 				place-items: center;
 				gap: 10px;
 			}
+			.flexcna {
+				display: flex;
+				flex-flow: column nowrap;
+				place-content: flex-start;
+				place-items: stretch;
+				gap: 10px;
+			}
 			.gridr2 {
 				display: grid;
 				grid-auto-flow: row;
@@ -174,6 +184,13 @@
 				border-radius: 5px;
 				padding: 1px 10px 1px 10px;
 				transition: all 200ms ease-in-out;
+			}
+			.log {
+				border-bottom: 1px ridge gray;
+				max-height: 10%;
+				width: 100%;
+				margin: auto;
+				padding: auto;
 			}
 			.rule:hover {
 				filter: brightness(60%);
@@ -216,6 +233,7 @@
 					this.client		= client;
 					this.channels	= typeof channels == "string" ? channels.split(',').map(a => a.trim()).filter(a => a) : Array.from(channels).map(a => a.trim()).filter(a => a);
 					this.enabled	= false;
+					this.color		= [ 0, 0, 0, ].map(c => Math.round(Math.random() * 150));
 					
 					Object.assign(this, inh);
 				} //ctor
@@ -237,10 +255,13 @@
 				} //connect
 				async reconnect() {
 					if (!this["#_client"]) return;
-					
 					this["#_failed"]	= false;
 					
-					return await this["#_client"].chat.reconnect();
+					await this.leave();
+					const	ret	= await this["#_client"].chat.reconnect();
+					this.join();
+					
+					return ret;
 				} //reconnect
 				async join() {
 					if (!this["#_client"]) return;
@@ -262,6 +283,13 @@
 					if (!this["#_failed"]) return this.enabled	= !!ise;
 				} //enable
 				
+				set color(color) {
+					this._color	= (typeof color == "string" ? color.replace(/^rgba?\(|\)$/gmis, "").split(',') : color).filter(a => a.toString().trim()).map(Number).filter(n => n >= 0 && n <= 255);
+				} //s-color
+				get color() {
+					return `rgba(${this._color.join(", ")})`;
+				} //g-color
+				
 				get str() {
 					return {
 						name:		this.name,
@@ -269,10 +297,65 @@
 						client:		this.client,
 						channels:	this.channels,
 						enabled:	this.enabled,
+						color:		this.color,
 					};
 				} //g-str
 				
 			} //User
+			class Rule {
+				
+				constructor(inh = {}) {
+					this.users		= [];
+					this.channels	= [];
+					this.trigger	= ``;
+					this.response	= ``;
+					this.enabled	= true;
+					
+					Object.assign(this, inh);
+				} //ctor
+				
+				set users(users) {
+					this._users	= (typeof users == "string" ? users.split(',') : users).map(u => u.toString().trim()).filter(a => a);
+				} //s-users
+				get users() {
+					return this._users;
+				} //g-users
+				set channels(channels) {
+					this._channels	= (typeof channels == "string" ? channels.split(',') : channels).map(c => c.toString().trim()).filter(a => a);
+				} //s-channels
+				get channels() {
+					return this._channels;
+				} //g-channels
+				set trigger(trigger) {
+					this._trigger	= trigger;
+				} //s-trigger
+				get trigger() {
+					return this._trigger;
+				} //g-trigger
+				set response(response) {
+					this._response	= response;
+				} //s-response
+				get response() {
+					return this._response;
+				} //g-response
+				set enabled(enabled) {
+					this._enabled	= !!enabled;
+				} //s-enabled
+				get enabled() {
+					return this._enabled;
+				} //g-enabled
+				
+				get str() {
+					return {
+						users:		this.users,
+						channels:	this.channels,
+						trigger:	this.trigger,
+						response:	this.response,
+						enabled:	this.enabled,
+					};
+				} //g-str
+				
+			} //Rule
 			
 			const	elms	= new Map,
 					nullish	= () => {};
@@ -294,11 +377,42 @@
 			function log(...data) {
 				console.log("LOG:\t", ...data);
 				
+				const	parsed	= data.map(d => 
+					d.toString()
+					.replaceAll(/_{2}(.+?)_{2}/gmisd, "<u>$1</u>")
+					.replaceAll(/\*{2}(.+?)\*{2}/gmisd, "<b>$1</b>")
+					.replaceAll(/~{2}(.+?)~{2}/gmisd, "<s>$1</s>")
+					.replaceAll(/"{2}(.+?)"{2}/gmisd, "<q>$1</q>")
+					.replaceAll(/\[{2}(.+?)\]{2}/gmisd, "<mark>$1</mark>")
+					.replaceAll(/_(.+?)_/gmisd, "<i>$1</i>")
+				);
+				
+				get("logs_temp", l => {
+					const	e	= l.content.cloneNode(true).querySelector("div");
+					
+					for (const i of parsed) {
+						const	el		= document.createElement("div");
+						
+						el.innerHTML	= i;
+						
+						e.appendChild(el);
+					}
+					
+					get("logs", l => l.appendChild(e));
+				});
+				
 				return data.join(' ');
 			} //log
 			
-			function save(k, w = "tT_data") {
-				const	o	= encrypt(k);
+			function save(merge = true, k, w = "tT_data", b) {
+				let			m	= { };
+				if (merge)	m	= decrypt(localStorage.getItem(w), b);
+				if (!k)		k	= data;
+				
+				const		o	= encrypt(JSON.stringify(Object.assign(m[0] || { }, k || { }), (k, v) => {
+								if ((v instanceof User) || (v instanceof Rule)) return v.str;
+								else return v;
+							}), b);
 				
 				localStorage.setItem(w, o[0]);
 				localStorage.setItem("Tt_enckey", o[2])
@@ -311,7 +425,10 @@
 				
 				if (odt) {
 					if (odt.users)
-						for (const e in odt.users) odts.push(register(odt.users[e].name, odt.users[e].token, odt.users[e].client, odt.users[e].channels, { enabled: odt.users[e].enabled }));
+						for (const e in odt.users) odts.push(register(odt.users[e].name, odt.users[e].token, odt.users[e].client, odt.users[e].channels, odt.users[e]));
+					if (odt.rules)
+						for (const e of odt.rules)
+							if (e) addRule(e);
 				}
 				
 				return odts;
@@ -321,7 +438,8 @@
 				return [ "upd",
 						 "account", "account_username", "account_client", "account_token", "account_register",// "account_enable",
 						 "users", "users_user", "users_enabled", "users_channels", "users_reconnect", "users_remove",
-						 "rules", "rules_temp" ].map(e => {
+						 "rules", "rules_temp",
+						 "logs", "logs_temp" ].map(e => {
 					const	elm	= document.getElementById(e);
 					
 					if (elm) elms.set(e, elm);
@@ -339,7 +457,7 @@
 			} //get
 			
 			function encrypt(key = JSON.stringify(data, (k, v) => {
-				if (v instanceof User) return v.str;
+				if ((v instanceof User) || (v instanceof Rule)) return v.str;
 				else return v;
 			}), by = localStorage.getItem("Tt_enckey") || Math.round(Math.random() * 0xFFFF)) {
 				const	k1 = Math.round(Math.random() * 0xFFFF),
@@ -429,9 +547,12 @@
 				const	usr	= data.users[name];
 				
 				if (usr) {
+					get("users_user", u => {
+						u.style.color	= usr.color;
+					});
 					get("users_channels", c => {
 						c.removeAttribute("disabled");
-						c.value	= usr.channels.join(',');
+						c.value	= usr.channels;
 					});
 					get("users_enabled", e => {
 						e.removeAttribute("disabled");
@@ -452,15 +573,58 @@
 					return "";
 				}
 			} //pickUser
-			function addRule() {
+			function addRule(inh) {
 				get("rules_temp", r => {
-					const	n	= r.content.cloneNode(true);
+					console.debug("AddRule:\t", data.rules.length);
 					
-					get("rules", l => {
-						l.appendChild(n);
-					});
+					const	n	= r.content.cloneNode(true),
+							l	= new Rule(inh),
+							elu	= n.querySelector("input[data-mid='users']"),
+							elc	= n.querySelector("input[data-mid='channels']"),
+							elt	= n.querySelector("input[data-mid='triggers']"),
+							elr	= n.querySelector("input[data-mid='reacts']"),
+							ele	= n.querySelector("input[data-mid='enabled']");
+					
+					n.querySelector("div").id	= `rule-${data.rules.length}`;
+					get("rules", l => l.appendChild(n));
+					data.rules.push(l);
+					
+					elu.value	= l.users;
+					elc.value	= l.channels;
+					elt.value	= l.trigger;
+					elr.value	= l.response;
+					ele.checked	= l.enabled;
+					
+					save();
 				});
 			} //addRule
+			function updateRule(e) {
+				console.debug("UpdateRule:\t", e);
+				
+				const	r	= data.rules[Number(e.split('-').pop())],
+						el	= document.getElementById(e),
+						elu	= el.querySelector("input[data-mid='users']"),
+						elc	= el.querySelector("input[data-mid='channels']"),
+						elt	= el.querySelector("input[data-mid='triggers']"),
+						elr	= el.querySelector("input[data-mid='reacts']"),
+						ele	= el.querySelector("input[data-mid='enabled']");
+				
+				r.users		= elu.value;
+				r.channels	= elc.value;
+				r.trigger	= elt.value;
+				r.response	= elr.value;
+				r.enabled	= ele.checked;
+				
+				save();
+			} //updateRule
+			function removeRule(e) {
+				console.debug("RemoveRule:\t", e);
+				
+				document.getElementById(e).remove();
+				data.rules.splice(Number(e.split('-').pop()), 1, null);
+				
+				save();
+			} //removeRule
 			
 			window.addEventListener("DOMContentLoaded", function _load() {
 				console.info("Loaded.");
@@ -610,40 +774,27 @@
 				</aside>
 				<br />
 				<aside id="rules" class="flexcn">
-					<!--
-						Users
-						Channels
-						Enabled
-						
-						Reply After (and/or)
-							- Text (regexp)
-							- Delay (min-max)
-						
-						Reply (pattern)
-					-->
 					<template id="rules_temp">
 						<div class="rule flexrna">
 							<label title="Users that participate in rule - Separate with comma">Users</label>
-							<input type="text" placeholder="Users" title="Users that participate in rule - Separate with comma" autocomplete="name" />
+							<input type="text" data-mid="users" placeholder="Users" onchange="updateRule(event.target.parentNode.id)" title="Users that participate in rule - Separate with comma" autocomplete="name" />
 							<label title="Channels that participate in rule - Separate with comma">Channels</label>
-							<input type="text" placeholder="Channels" title="Channels that participate in rule - Separate with comma" autocomplete="address-line1" />
+							<input type="text" data-mid="channels" placeholder="Channels" onchange="updateRule(event.target.parentNode.id)" title="Channels that participate in rule - Separate with comma" autocomplete="address-line1" />
 							<label title="What this Rule reacts to">Trigger</label>
-							<input type="text" placeholder="Rule..." title="What this Rule reacts to" autocomplete />
+							<input type="text" data-mid="triggers" placeholder="Rule..." onchange="updateRule(event.target.parentNode.id)" title="What this Rule reacts to" autocomplete />
 							<label title="How it reacts when Rule is triggered">Response</label>
-							<input type="text" placeholder="Reply" title="How it reacts when Rule is triggered" autocomplete />
+							<input type="text" data-mid="reacts" placeholder="Reply" onchange="updateRule(event.target.parentNode.id)" title="How it reacts when Rule is triggered" autocomplete />
 							<label title="Allow Rule to participate in automation">Enabled</label>
-							<input type="checkbox" title="Allow Rule to participate in automation" />
-							<button style="background-color: rgba(250, 50, 50, .5); aspect-ratio: 1;" title="Remove Rule from automation">X</button>
+							<input type="checkbox" data-mid="enabled" onchange="updateRule(event.target.parentNode.id)" title="Allow Rule to participate in automation" />
+							<button style="background-color: rgba(250, 50, 50, .5); aspect-ratio: 1;" onclick="removeRule(event.target.parentNode.id)" title="Remove Rule from automation">X</button>
 						</div>
 					</template>
 					<button style="background-color: rgba(50, 250, 50, .5); position: sticky; top: 0;" onclick="addRule()" title="Add new Rule" tabindex="10">Add New Rule +</button>
 				</aside>
 				<br />
-				<aside id="logs" class="flexcn">
+				<aside id="logs" class="flexcna">
 					<template id="logs_temp">
-						<div class="log flexrna">
-							
-						</div>
+						<div class="log flexrna"></div>
 					</template>
 				</aside>
 			</section>
