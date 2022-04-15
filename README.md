@@ -63,5 +63,5 @@ Example of accessable scope values within the rule:
 
 ### Reactions
 
-> Reactions are responses to rules activation/triggering.
+> Reactions are responses to rules activation/triggering.  
 > Same syntax as [Triggers](#triggers "Triggers") but bot-oriented instead of event/message-oriented.
