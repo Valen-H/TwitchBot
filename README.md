@@ -7,6 +7,8 @@ Learn JS RegExp [Here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/R
 
 ## Notes
 
+> Twitch.js is TMI-based.
+
 ### Triggers
 
 > JS code with to evaluate.
