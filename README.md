@@ -8,4 +8,8 @@ Twitch account chatting (and more?) automation.
 
 ### Triggers
 
+JS code with to evaluate.
+
 ### Reactions
+
+> Same syntax as [Triggers](#triggers "Triggers") but cannot access the message/event object but the bot account instead.
