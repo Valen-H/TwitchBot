@@ -11,7 +11,7 @@ Learn JS RegExp _[Here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/
 
 ### Triggers
 
-> JS code with to evaluate.
+> JS code with to evaluate, return truth-y to activate rule.
 
 Example of accessable scope values within the rule:
 ```javascript
@@ -63,4 +63,5 @@ Example of accessable scope values within the rule:
 
 ### Reactions
 
+> Reactions are responses to rules activation/triggering.
 > Same syntax as [Triggers](#triggers "Triggers") but bot-oriented instead of event/message-oriented.
