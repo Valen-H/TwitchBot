@@ -1,6 +1,6 @@
 # TwitchBot
 
-Twitch account chatting (and more?) automation.
+> Twitch account chatting (and more?) automation.
 
 Visit Bot Host Site [Here](https://valen-h.github.io/TwitchBot/TwitchBot.html "GitHub Pages")  
 Learn JS RegExp [Here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp "JS RegEx MDN").
