@@ -2,12 +2,12 @@
 
 > Twitch account chatting (and more?) automation.
 
-**Visit Bot Host Site [Here](https://valen-h.github.io/TwitchBot/TwitchBot.html "GitHub Pages")**  
-Learn JS RegExp [Here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp "JS RegEx MDN").
+**Visit Bot Host Site _[Here](https://valen-h.github.io/TwitchBot/TwitchBot.html "GitHub Pages")_**  
+Learn JS RegExp _[Here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp "JS RegEx MDN")_.
 
 ## Notes
 
-> Twitch.js is TMI-based.
+> `Twitch.js` is `TMI`-based.
 
 ### Triggers
 
@@ -59,9 +59,7 @@ Example of accessable scope values within the rule:
 #### Examples
 
 Activate if a message is sent by a user in the designated channel and carries a designated message:
-```javascript
-username == "user1" && /^starts with .+? and ends with$/.test(message)
-```
+`username == "user1" && /^starts with .+? and ends with$/.test(message)`
 
 ### Reactions
 
