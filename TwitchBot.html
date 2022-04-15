@@ -668,6 +668,13 @@
 				}
 			} //execRule
 			
+			window.addEventListener("beforeunload", e => {
+				for (const	u in data.users) {
+					const	us	= data.users[u];
+					
+					us.disconnect();
+				}
+			});
 			window.addEventListener("keydown", k => {
 				if (k.key === '1' && k.ctrlKey) {
 					k.preventDefault();
