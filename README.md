@@ -11,7 +11,7 @@ Learn JS RegExp _[Here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/
 
 ### Triggers
 
-> JS code with to evaluate, return truth-y to activate rule.
+> JS code to evaluate, return truth-y to activate rule.
 
 Example of accessable scope values within the rule:
 ```javascript
