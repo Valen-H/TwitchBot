@@ -212,14 +212,14 @@
 		<script defer>
 			class User {
 				
-				constructor(name, token, client, channels = "", inh = { }) {
+				constructor(name, token, client, channels = name, inh = { }) {
 					if (!(name && token)) throw `Bad User ${name}`;
 					
 					this.name		= name.replace(/^#/is, "");
 					this.token		= token.replace(/^oauth:/is, "");
 					this.client		= client;
 					this.channels	= (typeof channels == "string" ? channels.split(',') : channels).map(a => a.toString().toLowerCase().trim().replace(/^#/is, "")).filter(a => a);
-					this.enabled	= false;
+					this.enabled	= true;
 					this.color		= [ 0, 0, 0, ].map(c => Math.round(Math.random() * 150));
 					
 					Object.assign(this, inh);
@@ -269,7 +269,7 @@
 					
 					await this.leave();
 					
-					return await this["#_client"].disconnect();
+					return await this["#_client"].chat.disconnect();
 				} //disconnect
 				listen(on = true) {
 					if (!this["#_client"]) return;
@@ -580,8 +580,8 @@
 						c.value		= "";
 					});
 					get("users_enabled", e => {
-						c.disabled	= true;
-						c.checked	= false;
+						e.disabled	= true;
+						e.checked	= false;
 					});
 					
 					return "";
@@ -645,7 +645,7 @@
 				//'_raw', 'timestamp', 'command', 'event', 'channel', 'username', 'isSelf', 'tags', 'message']
 				
 				for (const rule of data.rules) {
-					if (rule.enabled && rule.users.includes(origin.name.toString().toLowerCase().trim().replace(/^#/is, "")) && rule.channels.includes(d.channel.toString().toLowerCase().trim().replace(/^#/is, ""))) {
+					if (rule.enabled && rule.users.includes(origin.name.toString().toLowerCase().trim().replace(/^#/is, "")) && rule.channels.includes((d.channel || "").toString().toLowerCase().trim().replace(/^#/is, ""))) {
 						with (origin) {
 							with (d) {
 								const	out		= await eval(rule.trigger);
