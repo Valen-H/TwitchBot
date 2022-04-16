@@ -180,7 +180,17 @@
 				margin: auto;
 				transition: all 200ms ease-in-out;
 				min-width: 100%;
+				max-height: 10vh;
 				width: fit-content;
+				text-overflow: ellipsis;
+				overflow: visible;
+				overscroll-behavior: auto;
+			}
+			.rule *, .log * {
+				max-height: 10vh;
+				text-overflow: ellipsis;
+				overflow: auto;
+				min-width: 3%;
 			}
 			.rule:hover, .log:hover {
 				backdrop-filter: brightness(70%);
@@ -359,7 +369,9 @@
 			} //Rule
 			
 			const	elms	= new Map,
-					nullish	= () => {};
+					nullish	= () => {},
+					always	= true,
+					never	= false;
 			let		data	= {
 				users:	{ },
 				rules:	[ ],
@@ -401,10 +413,10 @@
 					e.title		= new Date;
 					
 					for (const i of parsed) {
-						const	el			= document.createElement("div");
+						const	el		= document.createElement("div");
 						
-						el.innerHTML		= i;
-						el.style.maxWidth	= "20%";
+						el.innerHTML	= i;
+						el.style.width	= "20%";
 						
 						e.appendChild(el);
 					}
@@ -651,11 +663,13 @@
 								const	out		= await eval(rule.trigger);
 								
 								if (out) {
+									log("**Trigger**: ", `c{color: ${origin.color};||${origin.name}}`, `a{https://www.twitch.tv/${d.channel.toString().toLowerCase().trim().replace(/^#/is, "")}" target="Twitch||\\${d.channel}}`, `${rule.trigger}\t[=&ensp;${out}]`, "&nbsp;");
+									
 									with (origin["#_client"]) {
 										with (origin["#_client"].chat) {
 											const	inp	= await eval(rule.response);
 											
-											log("**Trigger**: ", `c{color: ${origin.color};||${origin.name}}`, `a{https://www.twitch.tv/${d.channel.toString().toLowerCase().trim().replace(/^#/is, "")}" target="Twitch||\\${d.channel}}`, `${rule.trigger}\t[=&ensp;${out}]`, `${rule.response}\t[=&ensp;${inp}]`);
+											log("**React**: ", `c{color: ${origin.color};||${origin.name}}`, `a{https://www.twitch.tv/${d.channel.toString().toLowerCase().trim().replace(/^#/is, "")}" target="Twitch||\\${d.channel}}`, `${rule.trigger}\t[=&ensp;${out}]`, `${rule.response}\t[=&ensp;${inp}]`);
 										}
 									}
 								}
@@ -694,7 +708,7 @@
 				document.body.style.cursor	= "wait";
 				Promise.all(restore()).then(() => {
 					document.body.style.cursor	= "auto";
-					log(`<span style="color: green;">Loaded.</span>`);
+					log(`c{color: green; text-align: center; width: 100%; display: inline-block;||Loaded.}`);
 				});
 				
 				get("account", e => {
