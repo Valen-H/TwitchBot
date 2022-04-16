@@ -160,13 +160,6 @@
 				place-items: center;
 				gap: 10px;
 			}
-			.flexcna {
-				display: flex;
-				flex-flow: column nowrap;
-				place-content: flex-start;
-				place-items: stretch;
-				gap: 10px;
-			}
 			.gridr2 {
 				display: grid;
 				grid-auto-flow: row;
@@ -175,10 +168,9 @@
 				margin: auto;
 				padding: auto;
 			}
-			.rule {
+			.rule, .log {
 				display: flex;
 				flex-flow: row nowrap;
-				justify-content: flex-start;
 				align-content: stretch;
 				place-items: center;
 				gap: 10px;
@@ -190,15 +182,8 @@
 				min-width: 100%;
 				width: fit-content;
 			}
-			.rule:hover {
-				filter: brightness(60%);
-			}
-			.log {
-				border-bottom: 1px ridge gray;
-				max-height: 10%;
-				margin: auto;
-				padding: auto;
-				width: 100%;
+			.rule:hover, .log:hover {
+				backdrop-filter: brightness(70%);
 			}
 			.thinking {
 				cursor: progress !important;
@@ -221,10 +206,6 @@
 			#users {
 				max-height: 10vh !important;
 			}
-			#logs {
-				width: 100%;
-				overflow: auto;
-			}
 		</style>
 		<!-- https://twitch-js.netlify.app/ -->
 		<script src="https://unpkg.com/twitch-js/dist/twitch.js"></script>
@@ -237,7 +218,7 @@
 					this.name		= name.replace(/^#/is, "");
 					this.token		= token.replace(/^oauth:/is, "");
 					this.client		= client;
-					this.channels	= typeof channels == "string" ? channels.split(',').map(a => a.trim()).filter(a => a) : Array.from(channels).map(a => a.trim()).filter(a => a);
+					this.channels	= (typeof channels == "string" ? channels.split(',') : channels).map(a => a.toString().toLowerCase().trim().replace(/^#/is, "")).filter(a => a);
 					this.enabled	= false;
 					this.color		= [ 0, 0, 0, ].map(c => Math.round(Math.random() * 150));
 					
@@ -335,13 +316,13 @@
 				} //ctor
 				
 				set users(users) {
-					this._users	= (typeof users == "string" ? users.split(',') : users).map(u => u.toString().toLowerCase().trim()).filter(a => a);
+					this._users	= (typeof users == "string" ? users.split(',') : users).map(u => u.toString().toLowerCase().trim().replace(/^#/is, "")).filter(a => a);
 				} //s-users
 				get users() {
 					return this._users;
 				} //g-users
 				set channels(channels) {
-					this._channels	= (typeof channels == "string" ? channels.split(',') : channels).map(c => c.toString().trim()).filter(a => a);
+					this._channels	= (typeof channels == "string" ? channels.split(',') : channels).map(c => c.toString().toLowerCase().trim().replace(/^#/is, "")).filter(a => a);
 				} //s-channels
 				get channels() {
 					return this._channels;
@@ -385,6 +366,20 @@
 				store:	{ },
 			};
 			
+			function format(str) {
+				return str.toString()
+					.replaceAll(/_{2}([^\\]+?)_{2}/gmisd, "<u>$1</u>")
+					.replaceAll(/\*{2}([^\\]+?)\*{2}/gmisd, "<b>$1</b>")
+					.replaceAll(/~{2}([^\\]+?)~{2}/gmisd, "<s>$1</s>")
+					.replaceAll(/"{2}([^\\]+?)"{2}/gmisd, "<q>$1</q>")
+					.replaceAll(/\[{2}([^\\]+?)\]{2}/gmisd, "<mark>$1</mark>")
+					.replaceAll(/_([^\\]+?)_/gmisd, "<i>$1</i>")
+					.replaceAll(/-{2}([^\\]+?)-{2}/gmisd, "<small>$1</small>")
+					.replaceAll(/(?<!\\)c\{(.+?)(?:(?<!\\)\|){2}(.+?)\}/gmisd, `<span style="$1">$2</span>`)
+					.replaceAll(/(?<!\\)a\{(.+?)(?:(?<!\\)\|){2}(.+?)\}/gmisd, `<a href="$1" target="_blank">$2</a>`)
+					.replaceAll("\t", "&emsp;")
+					.replaceAll(/(?<!\\)\\/gmisd, "");
+			} //format
 			function err(...data) {
 				console.error("ERROR:\t", ...data);
 				
@@ -398,16 +393,7 @@
 			function log(...data) {
 				console.log("LOG:\t", ...data);
 				
-				const	parsed	= data.map(d => 
-					d.toString()
-					.replaceAll(/_{2}(.+?)_{2}/gmisd, "<u>$1</u>")
-					.replaceAll(/\*{2}(.+?)\*{2}/gmisd, "<b>$1</b>")
-					.replaceAll(/~{2}(.+?)~{2}/gmisd, "<s>$1</s>")
-					.replaceAll(/"{2}(.+?)"{2}/gmisd, "<q>$1</q>")
-					.replaceAll(/\[{2}(.+?)\]{2}/gmisd, "<mark>$1</mark>")
-					.replaceAll(/_(.+?)_/gmisd, "<i>$1</i>")
-					.replaceAll(/-{2}(.+?)-{2}/gmisd, "<small>$1</small>")
-				);
+				const	parsed	= data.map(format);
 				
 				get("logs_temp", l => {
 					const	e	= l.content.cloneNode(true).querySelector("div");
@@ -415,23 +401,24 @@
 					e.title		= new Date;
 					
 					for (const i of parsed) {
-						const	el		= document.createElement("div");
+						const	el			= document.createElement("div");
 						
-						el.innerHTML	= i;
+						el.innerHTML		= i;
+						el.style.maxWidth	= "20%";
 						
 						e.appendChild(el);
 					}
 					
-					get("logs", l => l.appendChild(e));
+					get("logs", l => l.prepend(e));
 				});
 				
 				return data.join(' ');
 			} //log
 			
 			function save(merge = true, k, w = "tT_data", b) {
-				console.debug("SAVE");
+				console.debug("SAVE", k);
 				
-				let			m	= { };
+				let			m	= [{ }];
 				if (merge)	m	= decrypt(localStorage.getItem(w), b);
 				if (!k)		k	= data;
 				
@@ -538,7 +525,7 @@
 					
 					if (!usr["#_failed"]) {
 						data.users[user]	= usr;
-						save();
+						save(true, { users: data.users });
 						
 						get("account_username", e => e.value = "");
 						get("account_client", e => e.value = "");
@@ -558,10 +545,10 @@
 					
 					get("account_register", a => a.setCustomValidity(""));
 				} catch(e) {
-					get("account_register", a => {
+					/*get("account_register", a => {
 						a.setCustomValidity("Cannot Connect");
 						a.reportValidity();
-					});
+					});*/
 					alert(e);
 				}
 				
@@ -622,7 +609,7 @@
 					elr.value	= l.response;
 					ele.checked	= l.enabled;
 					
-					save();
+					save(true, { rules: data.rules });
 				});
 			} //addRule
 			function updateRule(e) {
@@ -642,7 +629,7 @@
 				r.response	= elr.value;
 				r.enabled	= ele.checked;
 				
-				save();
+				save(true, { rules: data.rules });
 			} //updateRule
 			function removeRule(e) {
 				console.debug("RemoveRule:\t", e);
@@ -650,7 +637,7 @@
 				document.getElementById(e).remove();
 				data.rules.splice(Number(e.split('-').pop()), 1, null);
 				
-				save();
+				save(true, { rules: data.rules });
 			} //removeRule
 			function execRule(origin, d, ...rest) {
 				//console.debug("CALL:\t", origin.name, d, ...rest);
@@ -658,10 +645,19 @@
 				//'_raw', 'timestamp', 'command', 'event', 'channel', 'username', 'isSelf', 'tags', 'message']
 				
 				for (const rule of data.rules) {
-					if (rule.channels.includes(origin.name.toLowerCase().trim())) {
+					if (rule.enabled && rule.users.includes(origin.name.toString().toLowerCase().trim().replace(/^#/is, "")) && rule.channels.includes(d.channel.toString().toLowerCase().trim().replace(/^#/is, ""))) {
 						with (origin) {
 							with (d) {
+								const	out		= eval(rule.trigger);
+								
+								if (out) {
+									with (origin["#_client"]) {
+										const	inp	= eval(rule.response);
+										
+										log("**Trigger**: ", `c{color: ${origin.color};||${origin.name}}`, `a{https://www.twitch.tv/${d.channel.toString().toLowerCase().trim().replace(/^#/is, "")}" target="Twitch||\\${d.channel}}`, `${rule.trigger}\t[=&ensp;${out}]`, `${rule.response}\t[=&ensp;${inp}]`);
+									}
 									
+								}
 							}
 						}
 					}
@@ -749,7 +745,7 @@
 							await data.users[get("users_user").value].disconnect();
 							delete data.users[get("users_user").value];
 							
-							save();
+							save(true, { users: data.users });
 							
 							get("users_user", u => {
 								const	w				= u.querySelector(`option[value="${get("users_user").value}"]`);
@@ -767,7 +763,7 @@
 						
 						if (usr) {
 							usr.enable(e.target.checked);
-							save();
+							save(true, { users: data.users });
 						} else err(`Wrong User ${usr}`);
 					};
 				});
@@ -780,7 +776,7 @@
 								await usr.leave();
 								
 								usr.channels	= e.target.value.split(',').map(a => a.trim()).filter(a => a);
-								save();
+								save(true, { users: data.users });
 								get("users_channels", a => a.classList.add("thinking"));
 								
 								await usr.join();
@@ -813,7 +809,7 @@
 						<input type="text" id="account_username" placeholder="Username" minlength="3" maxlength="25" size="30" pattern="#?[a-zA-Z0-9]\w{2,24}" title="Provide as it appears on your personal Twitch channel" autocomplete="name" tabindex="1" autofocus required />
 						<label for="account_client" title="Client ID - Optional">Client</label>
 						<input type="text" id="account_client" placeholder="Client" minlength="10" size="100" pattern="\w" title="Client ID - Optional" autocomplete="additional-name" tabindex="3" />
-						<label for="account_token" title="https://twitchapps.com/tmi/"><a href="https://twitchapps.com/tmi/" target="_blank" tabindex="-1">Token</a>*</label>
+						<label for="account_token" title="https://twitchapps.com/tmi/"><a href="https://twitchapps.com/tmi/" target="TMI" tabindex="-1">Token</a>*</label>
 						<input type="password" id="account_token" placeholder="Token" minlength="10" size="100" title="https://twitchapps.com/tmi/" autocomplete="current-password" tabindex="2" required />
 						<input type="submit" id="account_register" style="grid-column: 2;" title="Submit" tabindex="4" />
 					</fieldset>
@@ -855,19 +851,19 @@
 							<input type="text" data-mid="users" placeholder="Users" onchange="updateRule(event.target.parentNode.id)" title="Users that participate in rule - Separate with comma" autocomplete="name" />
 							<label title="Channels that participate in rule - Separate with comma">Channels</label>
 							<input type="text" data-mid="channels" placeholder="Channels" onchange="updateRule(event.target.parentNode.id)" title="Channels that participate in rule - Separate with comma" autocomplete="address-line1" />
-							<label title="What this Rule reacts to"><a href="https://github.com/Valen-H/TwitchBot/blob/master/README.md#triggers" target="_blank" tabindex="-1">Trigger</a></label>
+							<label title="What this Rule reacts to"><a href="https://github.com/Valen-H/TwitchBot/blob/master/README.md#triggers" target="README" tabindex="-1">Trigger</a></label>
 							<input type="text" data-mid="triggers" placeholder="Rule..." list="trigs" size="25" onchange="updateRule(event.target.parentNode.id)" title="What this Rule reacts to" autocomplete />
-							<label title="How it reacts when Rule is triggered"><a href="https://github.com/Valen-H/TwitchBot/blob/master/README.md#reactions" target="_blank" tabindex="-1">Response</a></label>
+							<label title="How it reacts when Rule is triggered"><a href="https://github.com/Valen-H/TwitchBot/blob/master/README.md#reactions" target="README" tabindex="-1">Response</a></label>
 							<input type="text" data-mid="reacts" placeholder="Reply" size="25" onchange="updateRule(event.target.parentNode.id)" title="How it reacts when Rule is triggered" autocomplete />
 							<label title="Allow Rule to participate in automation">Enabled</label>
 							<input type="checkbox" data-mid="enabled" onchange="updateRule(event.target.parentNode.id)" title="Allow Rule to participate in automation" />
 							<button style="background-color: rgba(250, 50, 50, .5); aspect-ratio: 1;" onclick="removeRule(event.target.parentNode.id)" title="Remove Rule from automation">X</button>
 						</div>
 					</template>
-					<button style="background-color: rgba(50, 250, 50, .5); position: sticky; top: 0;" onclick="addRule()" title="Add new Rule" tabindex="10">Add New Rule +</button>
+					<button style="background-color: rgba(50, 250, 50, .5); position: sticky; top: 0; left: 0; right: 0; width: 100%;" onclick="addRule()" title="Add new Rule" tabindex="10">Add New Rule +</button>
 				</aside>
 				<br />
-				<aside id="logs" class="flexcna">
+				<aside id="logs" class="flexcn">
 					<template id="logs_temp">
 						<div class="log flexrna"></div>
 					</template>
