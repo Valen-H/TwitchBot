@@ -250,6 +250,12 @@
 						onAuthenticationFailure:	a => this.err(a),
 					});
 					
+					const	o	= this["#_client"].chat.say;
+					this["#_client"].chat.say	= (c, m, ...rest) => {
+						log("**Say**: ", `c{color: ${this.color};||${this.name}}`, `a{https://www.twitch.tv/${c.toString().toLowerCase().trim().replace(/^#/is, "")}" target="Twitch||\\${c}}`, m);
+						o.call(this["#_client"].chat, c, m, ...rest);
+					};
+					
 					return await this["#_client"].chat.connect();
 				} //connect
 				async reconnect() {
