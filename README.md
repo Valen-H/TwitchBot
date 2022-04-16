@@ -60,6 +60,8 @@ Example of accessable scope values within the rule:
 
 * Activate if a message is sent by a user in the designated channel and carries a designated message:  
    `username == "user1" && /^starts with .+? and ends with$/.test(message)`
+* ![Rule](https://gcdnb.pbrd.co/images/UlR6NcwQkFMk.png?o=1)
+  ![Reaction](https://gcdnb.pbrd.co/images/n2uY8uVVo1CF.png?o=1)
 
 ### Reactions
 
