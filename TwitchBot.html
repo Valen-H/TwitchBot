@@ -639,7 +639,7 @@
 				
 				save(true, { rules: data.rules });
 			} //removeRule
-			function execRule(origin, d, ...rest) {
+			async function execRule(origin, d, ...rest) {
 				//console.debug("CALL:\t", origin.name, d, ...rest);
 				
 				//'_raw', 'timestamp', 'command', 'event', 'channel', 'username', 'isSelf', 'tags', 'message']
@@ -648,13 +648,15 @@
 					if (rule.enabled && rule.users.includes(origin.name.toString().toLowerCase().trim().replace(/^#/is, "")) && rule.channels.includes(d.channel.toString().toLowerCase().trim().replace(/^#/is, ""))) {
 						with (origin) {
 							with (d) {
-								const	out		= eval(rule.trigger);
+								const	out		= await eval(rule.trigger);
 								
 								if (out) {
 									with (origin["#_client"]) {
-										const	inp	= eval(rule.response);
-										
-										log("**Trigger**: ", `c{color: ${origin.color};||${origin.name}}`, `a{https://www.twitch.tv/${d.channel.toString().toLowerCase().trim().replace(/^#/is, "")}" target="Twitch||\\${d.channel}}`, `${rule.trigger}\t[=&ensp;${out}]`, `${rule.response}\t[=&ensp;${inp}]`);
+										with (origin["#_client"].chat) {
+											const	inp	= await eval(rule.response);
+											
+											log("**Trigger**: ", `c{color: ${origin.color};||${origin.name}}`, `a{https://www.twitch.tv/${d.channel.toString().toLowerCase().trim().replace(/^#/is, "")}" target="Twitch||\\${d.channel}}`, `${rule.trigger}\t[=&ensp;${out}]`, `${rule.response}\t[=&ensp;${inp}]`);
+										}
 									}
 								}
 							}
