@@ -1,4 +1,4 @@
-# TwitchBot ~ PreRelease
+# TwitchBot
 
 > Twitch account chatting (and more?) automation.
 
@@ -68,3 +68,5 @@ Example of accessable scope values within the rule:
 
 > Reactions are responses to rules activation/triggering.  
 > Same syntax as [Triggers](#triggers "Triggers") but bot-oriented instead of event/message-oriented.
+
+> Theoretically you can write both Triggers/Reacts in the "Reply" field but as a good practice try to always separate them into their respective areas.
