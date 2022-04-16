@@ -189,7 +189,8 @@
 			.rule *, .log * {
 				max-height: 10vh;
 				text-overflow: ellipsis;
-				font-size: .7rem;
+				font-size: .75rem;
+				font-smooth: always;
 			}
 			.rule:hover, .log:hover {
 				backdrop-filter: brightness(70%);
@@ -917,9 +918,9 @@
 							<label title="Channels that participate in rule - Separate with comma">Channels</label>
 							<input type="text" data-mid="channels" placeholder="Channels" onchange="updateRule(event.target.parentNode.id)" title="Channels that participate in rule - Separate with comma" autocomplete="address-line1" />
 							<label title="What this Rule reacts to"><a href="https://github.com/Valen-H/TwitchBot/blob/master/README.md#triggers" target="README" tabindex="-1">Trigger</a></label>
-							<input type="text" data-mid="triggers" placeholder="Rule..." list="trigs" size="25" onchange="updateRule(event.target.parentNode.id)" title="What this Rule reacts to" autocomplete />
+							<input type="text" data-mid="triggers" placeholder="Rule..." list="trigs" size="30" onchange="updateRule(event.target.parentNode.id)" title="What this Rule reacts to" autocomplete />
 							<label title="How it reacts when Rule is triggered"><a href="https://github.com/Valen-H/TwitchBot/blob/master/README.md#reactions" target="README" tabindex="-1">Response</a></label>
-							<input type="text" data-mid="reacts" placeholder="Reply" list="reacts" size="25" onchange="updateRule(event.target.parentNode.id)" title="How it reacts when Rule is triggered" autocomplete />
+							<input type="text" data-mid="reacts" placeholder="Reply" list="reacts" size="30" onchange="updateRule(event.target.parentNode.id)" title="How it reacts when Rule is triggered" autocomplete />
 							<label title="Allow Rule to participate in automation">Enabled</label>
 							<input type="checkbox" data-mid="enabled" onchange="updateRule(event.target.parentNode.id)" title="Allow Rule to participate in automation" />
 							<button style="background-color: rgba(250, 50, 50, .5); aspect-ratio: 1;" onclick="removeRule(event.target.parentNode.id)" title="Remove Rule from automation">X</button>
