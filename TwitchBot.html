@@ -252,7 +252,7 @@
 					
 					const	o	= this["#_client"].chat.say;
 					this["#_client"].chat.say	= (c, m, ...rest) => {
-						log("**Say**: ", `c{color: ${this.color};||${this.name}}`, `a{https://www.twitch.tv/${c.toString().toLowerCase().trim().replace(/^#/is, "")}" target="Twitch||\\${c}}`, m);
+						log("**Say**: ", `c{color: ${this.color};||${this.name}}`, `a{https://www.twitch.tv/${c.toString().toLowerCase().trim().replace(/^#/is, "")}" target="Twitch||\\${c}}`, "&nbsp;", m);
 						o.call(this["#_client"].chat, c, m, ...rest);
 					};
 					
