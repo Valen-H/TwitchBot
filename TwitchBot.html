@@ -189,8 +189,6 @@
 			.rule *, .log * {
 				max-height: 10vh;
 				text-overflow: ellipsis;
-				overflow: auto;
-				min-width: 3%;
 			}
 			.rule:hover, .log:hover {
 				backdrop-filter: brightness(70%);
@@ -315,6 +313,8 @@
 			} //User
 			class Rule {
 				
+				static	special	= "ticked";
+				
 				constructor(inh = {}) {
 					this.users		= [];
 					this.channels	= [];
@@ -339,6 +339,8 @@
 				} //g-channels
 				set trigger(trigger) {
 					this._trigger	= trigger;
+					
+					this.tick();
 				} //s-trigger
 				get trigger() {
 					return this._trigger;
@@ -351,10 +353,28 @@
 				} //g-response
 				set enabled(enabled) {
 					this._enabled	= !!enabled;
+					
+					this.tick();
 				} //s-enabled
 				get enabled() {
 					return this._enabled;
 				} //g-enabled
+				
+				async tick() {
+					if (!this["#_locked"] && this.enabled && this.trigger == Rule.special) {
+						this["#_locked"]	= true;
+						
+						try {
+							await eval(this.response);
+						} catch(e) { }
+						
+						await sleep(100);
+						
+						this["#_locked"]	= false;
+						
+						return this.tick();
+					}
+				} //tick
 				
 				get str() {
 					return {
@@ -370,8 +390,12 @@
 			
 			const	elms	= new Map,
 					nullish	= () => {},
+					on		= true,
 					always	= true,
-					never	= false;
+					never	= false,
+					once	= false,
+					ticked	= false,
+					off		= false;
 			let		data	= {
 				users:	{ },
 				rules:	[ ],
@@ -813,7 +837,7 @@
 				return Math.round(Math.random() * to + from);
 			} //rand
 			async function sleep(until, ...rest) {
-				return new Promise((res, rej) => setTimeout(res, until, ...rest));
+				return new Promise((res, rej) => sleep.lastint	= setTimeout(res, until, ...rest));
 			} //sleep
 		</script>
 	</head>
