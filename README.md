@@ -3,7 +3,7 @@
 > Twitch account chatting (and more?) automation.
 
 **Visit Bot Host Site _[Here](https://valen-h.github.io/TwitchBot/TwitchBot.html "GitHub Pages")_**  
-Learn JS RegExp _[Here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp "JS RegEx MDN")_.
+Learn JS RegExp _[Here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp "JS RegEx MDN")_.  
 Learn Twitch.js (based on TMI) _[Here](https://twitch-js.netlify.app "Netlify")_.
 
 ## Notes
