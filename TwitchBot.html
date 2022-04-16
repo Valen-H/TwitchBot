@@ -794,6 +794,13 @@
 					u.innerText	= new Date(Number(u.getAttribute("data-last")));
 				});
 			});
+			
+			function rand(to, from) {
+				return Math.round(Math.random() * to + from);
+			} //rand
+			async function sleep(until, ...rest) {
+				return new Promise((res, rej) => setTimeout(res, until, ...rest));
+			} //sleep
 		</script>
 	</head>
 	<body>
