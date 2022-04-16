@@ -656,7 +656,6 @@
 										
 										log("**Trigger**: ", `c{color: ${origin.color};||${origin.name}}`, `a{https://www.twitch.tv/${d.channel.toString().toLowerCase().trim().replace(/^#/is, "")}" target="Twitch||\\${d.channel}}`, `${rule.trigger}\t[=&ensp;${out}]`, `${rule.response}\t[=&ensp;${inp}]`);
 									}
-									
 								}
 							}
 						}
@@ -844,6 +843,24 @@
 						<option value="username.toLowerCase() == &quot;&quot;.toLowerCase()">username.toLowerCase() == "".toLowerCase()</option>
 					</optgroup>
 				</datalist>
+				<datalist id="reacts">
+					<optgroup label="Fields">
+						<option value="timestamp">timestamp</option>
+						<option value="command">command</option>
+						<option value="event">event</option>
+						<option value="channel">channel</option>
+						<option value="username">username</option>
+						<option value="isSelf">isSelf</option>
+						<option value="tags">tags</option>
+						<option value="message">message</option>
+					</optgroup>
+					<optgroup label="Expressions">
+						<option value="chat.say(channel, &quot;&quot;)">chat.say(channel, "")</option>
+						<option value="chat.whisper(username, &quot;&quot;)">chat.whisper(username, "")</option>
+						<option value="chat.block(channel, username)">chat.block(channel, username)</option>
+						<option value="chat.ban(channel, username)">chat.ban(channel, username)</option>
+					</optgroup>
+				</datalist>
 				<aside id="rules" class="flexcn">
 					<template id="rules_temp">
 						<div class="rule flexrna">
@@ -854,7 +871,7 @@
 							<label title="What this Rule reacts to"><a href="https://github.com/Valen-H/TwitchBot/blob/master/README.md#triggers" target="README" tabindex="-1">Trigger</a></label>
 							<input type="text" data-mid="triggers" placeholder="Rule..." list="trigs" size="25" onchange="updateRule(event.target.parentNode.id)" title="What this Rule reacts to" autocomplete />
 							<label title="How it reacts when Rule is triggered"><a href="https://github.com/Valen-H/TwitchBot/blob/master/README.md#reactions" target="README" tabindex="-1">Response</a></label>
-							<input type="text" data-mid="reacts" placeholder="Reply" size="25" onchange="updateRule(event.target.parentNode.id)" title="How it reacts when Rule is triggered" autocomplete />
+							<input type="text" data-mid="reacts" placeholder="Reply" list="reacts" size="25" onchange="updateRule(event.target.parentNode.id)" title="How it reacts when Rule is triggered" autocomplete />
 							<label title="Allow Rule to participate in automation">Enabled</label>
 							<input type="checkbox" data-mid="enabled" onchange="updateRule(event.target.parentNode.id)" title="Allow Rule to participate in automation" />
 							<button style="background-color: rgba(250, 50, 50, .5); aspect-ratio: 1;" onclick="removeRule(event.target.parentNode.id)" title="Remove Rule from automation">X</button>
